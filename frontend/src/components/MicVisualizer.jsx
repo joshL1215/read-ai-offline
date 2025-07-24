@@ -4,11 +4,18 @@ import { Avatar, Box, Typography } from "@mui/material";
 
 function MicVisualizer() {
     const [voiceDetected, setVoiceDetected] = useState(false);
+    const [transcript, setTranscript] = useState("")
 
     useEffect(() => {
 
         const socket = new WebSocket("ws://localhost:8000/ws/transcribe");
         let animationId;
+
+        socket.onmessage = (event) => {
+            const newTranscription = event.data;
+
+            setTranscript(prev => prev + newTranscription);
+        };
 
         navigator.mediaDevices.getUserMedia({ audio: true })
             .then(stream => {
@@ -74,7 +81,7 @@ function MicVisualizer() {
                     fontSize: 20,
                 }}
             >
-                Live Transcription:
+                Live Transcription: {transcript}
             </Typography>
         </Box>
     );
