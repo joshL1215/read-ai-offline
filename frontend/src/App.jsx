@@ -1,28 +1,22 @@
 import React from 'react';
-import MicVisualizer from './components/MicVisualizer.jsx'
-import { useEffect, useState } from "react";
+import { Routes, Route } from 'react-router-dom';
+import MenuScene from './scenes/MenuScene.jsx';
+import ReadingScene from './scenes/ReadingScene.jsx';
+import JournalScene from './scenes/JournalScene.jsx';
+import NavBar from './components/NavBar.jsx';
 
 function App() {
 
-    const [message, setMessage] = useState("");
-
-    useEffect(() => {
-        fetch("http://localhost:8000/ping")
-            .then(res => res.json())
-            .then(data => setMessage(data.message))
-            .catch(err => console.error("API Error:", err));
-    }, []);
-
     return (
-        <div style={{ padding: 20 }}>
-            <h1>React ↔ FastAPI Test</h1>
-            <p>Message from backend: <strong>{message}</strong></p>
-
-            <MicVisualizer />
+        <div>
+            <Routes>
+                <Route path="/" element={<MenuScene />} />
+                <Route path="/reading" element={<ReadingScene />} />
+                <Route path="/journal" element={<JournalScene />} />
+            </Routes>
         </div>
+    )
 
-    );
 }
-
 
 export default App;
