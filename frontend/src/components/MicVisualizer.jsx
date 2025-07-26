@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import MicIcon from '@mui/icons-material/Mic';
-import { Avatar, Box, Typography } from "@mui/material";
+import { Avatar, Box } from "@mui/material";
 
 
 function MicVisualizer() {
+
     const [voiceDetected, setVoiceDetected] = useState(false);
-    const [transcript, setTranscript] = useState("");
 
     useEffect(() => {
 
@@ -14,8 +14,6 @@ function MicVisualizer() {
 
         navigator.mediaDevices.getUserMedia({ audio: true })
             .then(stream => {
-
-                const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
 
                 const audioContext = new AudioContext();
                 const source = audioContext.createMediaStreamSource(stream);
@@ -31,12 +29,7 @@ function MicVisualizer() {
                     const sum = dataArray.reduce((acc, val) => acc + val, 0);
                     const average = sum / dataArray.length;
 
-
-                    if (average > 30) {
-
-                        setVoiceDetected(true)
-
-                    };
+                    setVoiceDetected(average > 25);
 
                     animationId = requestAnimationFrame(getVolume);
                 }
@@ -77,14 +70,6 @@ function MicVisualizer() {
             >
                 <MicIcon sx={{ fontSize: voiceDetected ? 45 : 40 }} />
             </Avatar>
-
-            <Typography
-                sx={{
-                    fontSize: 20,
-                }}
-            >
-                Live Transcription: {transcript}
-            </Typography>
         </Box>
     );
 }
