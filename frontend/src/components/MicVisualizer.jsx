@@ -2,29 +2,26 @@ import React, { useEffect, useState } from "react";
 import MicIcon from '@mui/icons-material/Mic';
 import { Avatar, Box, Typography } from "@mui/material";
 
+
 function MicVisualizer() {
     const [voiceDetected, setVoiceDetected] = useState(false);
-    const [transcript, setTranscript] = useState("")
+    const [transcript, setTranscript] = useState("");
 
     useEffect(() => {
 
-        const socket = new WebSocket("ws://localhost:8000/ws/transcribe");
+        // Microphone lights up when sound is picked up
         let animationId;
-
-        socket.onmessage = (event) => {
-            const newTranscription = event.data;
-
-            setTranscript(prev => prev + newTranscription);
-        };
 
         navigator.mediaDevices.getUserMedia({ audio: true })
             .then(stream => {
 
+                const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+
                 const audioContext = new AudioContext();
                 const source = audioContext.createMediaStreamSource(stream);
+
                 const analyser = audioContext.createAnalyser();
                 analyser.fftSize = 256;
-
                 const dataArray = new Uint8Array(analyser.frequencyBinCount);
                 source.connect(analyser);
 
@@ -34,9 +31,14 @@ function MicVisualizer() {
                     const sum = dataArray.reduce((acc, val) => acc + val, 0);
                     const average = sum / dataArray.length;
 
-                    setVoiceDetected(average > 30);
-                    animationId = requestAnimationFrame(getVolume);
 
+                    if (average > 30) {
+
+                        setVoiceDetected(true)
+
+                    };
+
+                    animationId = requestAnimationFrame(getVolume);
                 }
 
                 getVolume();
