@@ -2,7 +2,8 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 from faster_whisper import WhisperModel
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect 
+from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 import ollama
 import io
@@ -29,11 +30,6 @@ app.add_middleware(
 )
 
 model = WhisperModel("small", device="cpu", compute_type="float32")
-
-@app.get("/ping")
-async def ping():
-    return {"message": "pong"}
-
 executor = ThreadPoolExecutor()
 
 async def transcribe_async(audio_chunk):
@@ -41,27 +37,24 @@ async def transcribe_async(audio_chunk):
 
     return await loop.run_in_executor(executor, model.transcribe, audio_chunk, "en")
 
-@app.websocket("/ws/transcribe")
-async def transcribe_audio(websocket: WebSocket):
-    await websocket.accept()
-    print("WebSocket connected")
 
-    try:
-        text = ""
-        while True:
-            data = await websocket.receive_bytes()
-            if not data:
-                continue
+@app.get("/ping")
+async def ping():
+    return {"message": "pong"}
 
-            audio_chunk = np.frombuffer(data, dtype=np.int16).astype(np.float32) / 32768.0
+@app.post("/transcribe")
+async def transcribe():
 
-            segments, _ = await transcribe_async(audio_chunk)
-            text += "".join(segment.text for segment in segments)
-            print(text)
-            await websocket.send_text(text)
+    return transcribed_text
 
-    except WebSocketDisconnect:
-        print("WebSocket disconnected")
+@app.post("/inferences/passage-generation")
+async def generate_passage(prompt : str):
+    currentText = []
+    for chunk in ollama.generate(model='gemma3n:e2b', prompt=f"Write a story about: {prompt}", stream=True): 
+        currentText.append(chunk['response'])
+
+    return currentText.strip(" ")
+
 
 
 if __name__ == "__main__":
