@@ -3,21 +3,40 @@ import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import { Link as RouteLink } from 'react-router-dom';
 
+
+const buttonStyles = {
+    transition: 'transform 0.75s ease',
+    fontSize: '30px',
+    fontFamily: 'Arial',
+    fontWeight: '300',
+    color: 'black',
+    textDecoration: 'none',
+    textTransform: 'none',
+    letterSpacing: '0.5px',
+    willChange: 'transform',
+    '&:hover': {
+        backgroundColor: 'transparent',
+        transform: 'scale(1.2)',
+    },
+};
+
 function NavBar() {
     return (
         <Stack
             direction="row"
-            spacing={3}
+            spacing={25}
         >
             <RouteLink to="/reading">
-                <Button>READ</Button>
+                <Button sx={buttonStyles}>Read</Button>
             </RouteLink>
 
             <RouteLink to="/journal">
-                <Button>JOURNAL</Button>
+                <Button sx={buttonStyles}>Journal</Button>
             </RouteLink>
 
-            <Button>SETTINGS</Button>
+            <RouteLink to="/settings">
+                <Button sx={buttonStyles}>Settings</Button>
+            </RouteLink>
         </Stack>
 
     )
