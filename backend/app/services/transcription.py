@@ -3,8 +3,9 @@ from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 from faster_whisper import WhisperModel
 from fastapi import FastAPI, File, UploadFile, WebSocket, WebSocketDisconnect
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from tempfile import NamedTemporaryFile
 import ollama
 import tempfile
 import io
@@ -15,6 +16,9 @@ import tempfile
 import asyncio
 import uuid 
 import os 
+import subprocess
+import matplotlib.pyplot as plt
+
 
 # Global Variables
 silenceThrehold = 5 # Flag if silent for more than X seconds
@@ -35,20 +39,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from fastapi import FastAPI, UploadFile, File
-from fastapi.responses import JSONResponse
-import subprocess
-from tempfile import NamedTemporaryFile
-from faster_whisper import WhisperModel
-from concurrent.futures import ThreadPoolExecutor
-import asyncio
-import uuid 
-import os 
-
 model = WhisperModel("small", device="cpu", compute_type="float32")
 
 @app.post("/transcribe")
 async def transcribe(file: UploadFile = File(...)):
+    '''
+    Input: Takes audio file
+    Output: Transcription fo the audio file 
+    '''
 
     with tempfile.NamedTemporaryFile(suffix=".webm", delete=True) as webm_temp, \
          tempfile.NamedTemporaryFile(suffix=".wav", delete=True) as wav_temp:
@@ -99,8 +97,17 @@ async def generate_reponse(prompt : str, promptType : str):
 
 
 
-# Transcription = Transcription from User (result), Story = what they were suppose to read (currentText)
+
 def gradeTranscription(transcript, story : str):
+    '''
+    Input: Transcription (Transcription from User (result), Story = what they were suppose to read (currentText)
+
+    Output: A dicitonary with three components
+    silence -> times of all of the times when they pause for more than silence threshold
+    pace -> average wpm collected at various times
+    incorrect -> incorrect words and time stamps
+    '''
+
     silenceTracker = []
     pacingGraph = []
     incorrectWords = []
@@ -153,6 +160,10 @@ async def transcribeAudio(filePath : str):
 
 @app.get("/plot")
 async def plot_pace_graph_bytes(pace_data):
+    '''
+    For plotting (dont worry about this for now)
+    '''
+
     times = [point["time"] for point in pace_data]
     wpm = [point["wpm"] for point in pace_data]
 
@@ -173,6 +184,13 @@ async def plot_pace_graph_bytes(pace_data):
 # Transcribe from audio file
 @app.post("/inferences/analysis")
 async def analyzeTranscript(file: UploadFile = File(...)):
+    '''
+    Takes a audio file. Pushes it into the transcriber gets the result, grades the result, and then saves it into db
+
+    Later take value at pass into inference from this spot. Here you will return the json will all relevant inforamtion!
+    '''
+
+
     try:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
             shutil.copyfileobj(file.file, tmp)
@@ -196,32 +214,6 @@ async def analyzeTranscript(file: UploadFile = File(...)):
                                       })
     except Exception as e:
         return JSONResponse(content={"error": str(e)})
-
-
-buffer = np.array([], dtype=np.int16)
-text = ""
-
-@app.websocket("/ws/transcribe")
-async def audiotranscribe(websocket: WebSocket):
-    await websocket.accept()
-    print("Client connected.")
-
-    try:
-        while True:
-            audio_chunk = await websocket.receive_bytes()
-            audio_np = np.frombuffer(audio_chunk, dtype=np.int16)
-            buffer = np.concatenate((buffer, audio_np))
-
-            while len(buffer) >= 16000:
-                chunk_to_process = buffer[:16000]
-                buffer = buffer[16000:]
-
-                segments, _ = model.transcribe(chunk_to_process, beam_size=5)
-                text += " ".join([seg.text for seg in segments])
-                await websocket.send_text(text)
-
-    except WebSocketDisconnect:
-        print("Client disconnected.")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
