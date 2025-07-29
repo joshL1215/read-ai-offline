@@ -1,20 +1,15 @@
 import React, { useEffect, useState } from "react";
 import MicIcon from '@mui/icons-material/Mic';
-import { Avatar, Box, Typography } from "@mui/material";
+import { Avatar, Box } from "@mui/material";
 
 function MicVisualizer() {
     const [voiceDetected, setVoiceDetected] = useState(false);
-    const [transcript, setTranscript] = useState("");
-    const TIME_BETWEEN = 2000;
 
     useEffect(() => {
         let animationId;
-        let chunks = [];
-        let interval;
         let stream;
-        let mediaRecorder;
 
-        const startRecording = async () => {
+        const startMicVisualizer = async () => {
             stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
             const audioContext = new AudioContext();
@@ -24,85 +19,34 @@ function MicVisualizer() {
             const dataArray = new Uint8Array(analyser.frequencyBinCount);
             source.connect(analyser);
 
-            function getVolume() {
+            const getVolume = () => {
                 analyser.getByteFrequencyData(dataArray);
                 const avg = dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
-                setVoiceDetected(avg > 20);
+                setVoiceDetected(avg > 30);
                 animationId = requestAnimationFrame(getVolume);
-            }
-
-            getVolume();
-
-            const recordChunk = () => {
-                chunks = [];
-                mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
-
-                mediaRecorder.ondataavailable = async (e) => {
-                    if (e.data.size > 0) {
-                        const formData = new FormData();
-                        formData.append("file", e.data, "audio.webm");
-
-                        try {
-                            const response = await fetch("http://localhost:8000/transcribe", {
-                                method: "POST",
-                                body: formData,
-                            });
-
-                            if (response.ok) {
-                                const data = await response.json();
-                                setTranscript(prev => prev + " " + data.transcription);
-                            } else {
-                                console.error("Transcription failed", await response.text());
-                            }
-                        } catch (err) {
-                            console.error("Error sending audio", err);
-                        }
-                    }
-                };
-
-                mediaRecorder.onstop = () => {
-                    // Start the next chunk after current finishes
-                    setTimeout(recordChunk, 0);
-                };
-
-                mediaRecorder.start();
-
-                // Stop after 5 seconds
-                setTimeout(() => {
-                    if (mediaRecorder.state === "recording") {
-                        mediaRecorder.stop();
-                    }
-                }, TIME_BETWEEN);
             };
 
-            recordChunk();
+            getVolume();
         };
 
-        startRecording();
+        startMicVisualizer();
 
         return () => {
             cancelAnimationFrame(animationId);
-            if (interval) clearInterval(interval);
-            if (mediaRecorder && mediaRecorder.state === "recording") {
-                mediaRecorder.stop();
-            }
             if (stream) {
                 stream.getTracks().forEach(track => track.stop());
             }
         };
     }, []);
 
-
     return (
         <Box
             sx={{
-
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "center",
                 alignItems: "center",
                 mt: 4,
-                gap: 5,
             }}
         >
             <Avatar
@@ -115,14 +59,6 @@ function MicVisualizer() {
             >
                 <MicIcon sx={{ fontSize: voiceDetected ? 45 : 40 }} />
             </Avatar>
-
-            <Typography
-                sx={{
-                    fontSize: 20,
-                }}
-            >
-                Live Transcription: {transcript}
-            </Typography>
         </Box>
     );
 }
