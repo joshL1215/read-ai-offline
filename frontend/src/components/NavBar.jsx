@@ -1,21 +1,22 @@
 import React, { useEffect, useState } from "react";
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
+import { justifyContent, shadows } from '@mui/system';
 import { Link as RouteLink } from 'react-router-dom';
 
 
 const buttonStyles = {
-    transition: 'transform 0.75s ease',
-    fontSize: '30px',
-    fontFamily: 'Arial',
-    fontWeight: '300',
-    color: 'black',
-    textDecoration: 'none',
+    justifyContent: 'center',
+    transition: 'transform 0.75s ease, color 0.75s ease',
+    fontSize: 50,
+    fontFamily: 'Inter',
+    color: '#000000ff',
     textTransform: 'none',
-    letterSpacing: '0.5px',
+    letterSpacing: '0.1px',
+    backgroundColor: 'transparent',
     willChange: 'transform',
     '&:hover': {
-        backgroundColor: 'transparent',
+        color: '#321a79ff',
         transform: 'scale(1.2)',
     },
 };
@@ -23,20 +24,14 @@ const buttonStyles = {
 function NavBar() {
     return (
         <Stack
-            direction="row"
-            spacing={25}
+            direction="column"
+            spacing={10}
+
         >
-            <RouteLink to="/reading">
-                <Button sx={buttonStyles}>Read</Button>
-            </RouteLink>
+            <Button LinkComponent={RouteLink} to="/reading" sx={buttonStyles}>Read</Button>
+            <Button LinkComponent={RouteLink} to="/journal" sx={buttonStyles}>Journal</Button>
+            <Button LinkComponent={RouteLink} to="/settings" sx={buttonStyles}>Settings</Button>
 
-            <RouteLink to="/journal">
-                <Button sx={buttonStyles}>Journal</Button>
-            </RouteLink>
-
-            <RouteLink to="/settings">
-                <Button sx={buttonStyles}>Settings</Button>
-            </RouteLink>
         </Stack>
 
     )

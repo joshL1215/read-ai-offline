@@ -3,18 +3,18 @@ from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 from faster_whisper import WhisperModel
 from fastapi import FastAPI, File, UploadFile, WebSocket, WebSocketDisconnect
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 import ollama
 import tempfile
 import io
 import time
 import uvicorn
-import shutil
-import matplotlib.pyplot as plt
-from io import BytesIO
-
-import db.database # adjust permission later
+import ffmpeg
+import tempfile
+import asyncio
+import uuid 
+import os 
 
 # Global Variables
 silenceThrehold = 5 # Flag if silent for more than X seconds
@@ -35,22 +35,55 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from fastapi import FastAPI, UploadFile, File
+from fastapi.responses import JSONResponse
+import subprocess
+from tempfile import NamedTemporaryFile
+from faster_whisper import WhisperModel
+from concurrent.futures import ThreadPoolExecutor
+import asyncio
+import uuid 
+import os 
+
 model = WhisperModel("small", device="cpu", compute_type="float32")
-executor = ThreadPoolExecutor()
 
-async def transcribe_async(audio_chunk):
-    loop = asyncio.get_running_loop()
+@app.post("/transcribe")
+async def transcribe(file: UploadFile = File(...)):
 
-    return await loop.run_in_executor(executor, model.transcribe, audio_chunk, "en")
+    with tempfile.NamedTemporaryFile(suffix=".webm", delete=True) as webm_temp, \
+         tempfile.NamedTemporaryFile(suffix=".wav", delete=True) as wav_temp:
+
+        webm_bytes = await file.read()
+        webm_temp.write(webm_bytes)
+        webm_temp.flush()  # Ensure data is written to disk
+        print(f"Saved webm to temp file: {webm_temp.name}")
+
+        result = subprocess.run([
+            "ffmpeg", "-y",
+            "-i", webm_temp.name,
+            "-ar", "16000",
+            "-ac", "1",
+            "-f", "wav",
+            wav_temp.name
+        ], capture_output=True, text=True)
+
+        if result.returncode != 0:
+            print("FFmpeg error: ", result.stderr)
+
+        print("Conversion to wav successful.")
+
+        # transcription = await transcribe_async(wav_temp.name)
+        segments, info = model.transcribe(wav_temp.name, beam_size=5)
+        transcription = " ".join( [segment.text.strip() for segment in segments])
+        print("Transcription done:", transcription)
+
+        return {"transcription": transcription}
 
 
 @app.get("/ping")
 async def ping():
     return {"message": "pong"}
 
-@app.post("/transcribe")
-async def transcribe():
-    return transcribed_text
 
 @app.post("/inferences/passage-generation")
 async def generate_reponse(prompt : str, promptType : str):
