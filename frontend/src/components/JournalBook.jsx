@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { Container, Button, Box, Typography } from "@mui/material";
+import { Container, Box, Typography } from "@mui/material";
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+import IconButton from '@mui/material/IconButton';
 
 const styles = {
     container: {
@@ -39,6 +40,8 @@ const styles = {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
+        outline: 'none',
+        boxShadow: 'none',
 
     },
 };
@@ -76,7 +79,7 @@ function JournalBook({ pages }) {
             </Box>
 
             <Box sx={styles.controls}>
-                <Button
+                <IconButton
                     variant="contained"
                     onClick={prevPageset}
                     disabled={currentPageset === 0}
@@ -89,9 +92,9 @@ function JournalBook({ pages }) {
                     }}
                 >
                     <ArrowBackIosNewIcon />
-                </Button>
+                </IconButton>
 
-                <Button
+                <IconButton
                     variant="contained"
                     onClick={nextPageset}
                     disabled={currentPageset === totalPagesets - 1}
@@ -104,7 +107,7 @@ function JournalBook({ pages }) {
                     }}
                 >
                     <ArrowForwardIosIcon />
-                </Button>
+                </IconButton>
             </Box>
         </Container >
     );
