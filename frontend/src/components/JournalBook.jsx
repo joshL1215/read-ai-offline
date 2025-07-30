@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { Container, Button, Box, Typography } from "@mui/material";
+import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
+import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 
 const styles = {
     container: {
@@ -32,10 +34,12 @@ const styles = {
     lastPage: {
         borderRight: 'none',
     },
+
     controls: {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
+
     },
 };
 
@@ -79,13 +83,12 @@ function JournalBook({ pages }) {
                     sx={{
                         backgroundColor: "transparent",
                         color: "black",
-
                         '&:hover': {
                             color: currentPageset === 0 ? '#474747ff' : '#111',
                         },
                     }}
                 >
-                    ←
+                    <ArrowBackIosNewIcon />
                 </Button>
 
                 <Button
@@ -100,7 +103,7 @@ function JournalBook({ pages }) {
                         },
                     }}
                 >
-                    →
+                    <ArrowForwardIosIcon />
                 </Button>
             </Box>
         </Container >
