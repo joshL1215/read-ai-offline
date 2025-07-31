@@ -25,12 +25,11 @@ function NavBar() {
     return (
         <Stack
             direction="column"
-            spacing={10}
+            spacing={15}
 
         >
             <Button LinkComponent={RouteLink} to="/reading" sx={buttonStyles}>Read</Button>
             <Button LinkComponent={RouteLink} to="/journal" sx={buttonStyles}>Journal</Button>
-            <Button LinkComponent={RouteLink} to="/settings" sx={buttonStyles}>Settings</Button>
 
         </Stack>
 

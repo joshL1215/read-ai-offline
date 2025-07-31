@@ -76,9 +76,7 @@ function MenuScene() {
                         Powered by Gemma 3n directly on your machine
                     </Typography>
                 </Container>
-                {/* <Container sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', width: '60vh' }}>
-                <SettingsIconComponent />
-            </Container> */}
+
 
                 <Container sx={{ display: 'flex', justifyContent: 'center', width: '40vh' }}>
                     <NavBar />
