@@ -324,43 +324,6 @@ async def analyze_recording(result):
     return
     return {"segments" : segments, "silences": silences, "pace": pace, "incorrect": errors, "aiResponse" : aiResponse}
 
-async def plot_pace_graph(pace):
-    '''
-    Input: Pace Graph (as saved in the database)
-    Output: Picture of a Pace over time (to frontend)
-    '''
-    times = [entry["time"] for entry in pace]
-    wpms = [entry["wpm"] for entry in pace]
-    plt.figure(figsize=(10, 6)) 
-    plt.plot(times, wpms, marker='o', color='b', linestyle='-', linewidth=2, markersize=8)
-    plt.xlabel("Time (seconds)", fontsize=12)
-    plt.ylabel("Words Per Minute (WPM)", fontsize=12)
-    plt.grid(True, linestyle='--', alpha=0.7)
-    plt.xticks(fontsize=10)
-    plt.yticks(fontsize=10)
-    avg_wpm = sum(wpms) / len(wpms)
-    plt.axhline(y=avg_wpm, color='r', linestyle='--', label=f"Average WPM: {avg_wpm:.2f}")
-    plt.legend(loc='upper right')
-    plt.tight_layout() 
-    plt.show()
-    # add API call
-
-
-async def plot_silences(silences):
-    """
-    Plot a horizontal bar chart to represent the duration of silences between phrase pairs.
-    """
-    phrase_pairs = [f"{s['phrase1']} - {s['phrase2']}" for s in silences]
-    durations = [s['duration'] for s in silences]
-    plt.figure(figsize=(10, 6))
-    plt.barh(phrase_pairs, durations, color='skyblue', edgecolor='black')
-    plt.title('Silence Durations Between Phrases', fontsize=16)
-    plt.xlabel('Duration (seconds)', fontsize=12)
-    plt.ylabel('Phrase Pair', fontsize=12)
-    plt.grid(True, linestyle='--', alpha=0.6)
-    plt.tight_layout()
-    plt.show()
-    # Add API Call
 
 
 '''
