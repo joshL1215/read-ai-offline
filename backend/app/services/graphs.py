@@ -3,11 +3,18 @@ import matplotlib.pyplot as plt
 from fastapi import FastAPI, File, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # or ["http://localhost:3000"] for React
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 import io
 import os
 app = FastAPI()
 db_path = os.path.join(os.path.dirname(__file__), '..', 'db', 'database.db')
-from app.db.database import get_transcription_by_id
+from app.db.database import get_transcription_by_id, get_last_valid_id
 
 def plot_pace_graph(pace):
     '''
@@ -34,7 +41,10 @@ def plot_pace_graph(pace):
     return buf
 
 @app.get("/pace-graph")
-async def get_pace_graph(transcription_id: int):
+async def get_pace_graph():
+    transcription_id = get_last_valid_id()
+    if not transcription_id:
+        return JSONResponse(status_code=404, content={"error": "No valid transcription found."})
     data = get_transcription_by_id(transcription_id)
     if not data or "pace" not in data:
         return {"error"}
@@ -62,7 +72,10 @@ def plot_silences(silences):
     return buffer
     
 @app.get("/silences-graph")
-async def get_silences_graph(transcription_id: int):
+async def get_silences_graph():
+    transcription_id = get_last_valid_id()
+    if not transcription_id:
+        return JSONResponse(status_code=404, content={"error": "No valid transcription found."})  
     data = get_transcription_by_id(transcription_id)
     if not data or "silences" not in data:
         return {"error"}
