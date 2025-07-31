@@ -1,80 +1,21 @@
-import os
 from sqlite3 import connect
+import ollama
+import whisper
+import matplotlib.pyplot as plt
+import re
+import os 
+import string
+
+from difflib import Differ
+from fuzzywuzzy import fuzz
+from typing import List, Tuple
+
+from database import create_tables, pingDatabase, add_transcription_data, get_transcription_by_id, get_last_valid_id
 
 def pingDatabase():
     print("Hello from Database.py")
 
-def create_tables():
-    '''
-    Performance Database. Each Row includes the following:
-    Unique ID
-    silence graph  
-    pace graph
-    incorrect words
-    AI Analysis
-    '''
-    print("Creating Database Tables")
-    
-    database_path = os.path.join(os.path.dirname(__file__), 'database.db') # Fix this later
-    
-    with connect(database_path) as conn:
-        cursor = conn.cursor()
-
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS transcriptions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            ai_analysis TEXT
-        )
-        ''')
-
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS segments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            transcription_id INTEGER,
-            start REAL,
-            end REAL,
-            text TEXT,
-            FOREIGN KEY (transcription_id) REFERENCES transcriptions(id) ON DELETE CASCADE
-        )
-        ''')
-
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS silences (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            transcription_id INTEGER,
-            phrase1 TEXT,
-            phrase2 TEXT,
-            duration REAL,
-            FOREIGN KEY (transcription_id) REFERENCES transcriptions(id) ON DELETE CASCADE
-        )
-        ''')
-
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS pace_graph (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            transcription_id INTEGER,
-            time REAL,
-            wpm REAL,
-            FOREIGN KEY (transcription_id) REFERENCES transcriptions(id) ON DELETE CASCADE
-        )
-        ''')
-
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS incorrect_words (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            transcription_id INTEGER,
-            word TEXT,
-            start REAL,
-            end REAL,
-            FOREIGN KEY (transcription_id) REFERENCES transcriptions(id) ON DELETE CASCADE
-        )
-        ''')
-
-        conn.commit()
-
-
-async def add_transcription_data(segments, silences, pace, incorrect, ai_analysis):
+def add_transcription_data(segments, silences, pace, incorrect, ai_analysis):
     '''
     segments = [{"start": 0.0, "end": 1.2, "text": "Hello world"}]
     silences = [{"phrase1": "Hello", "phrase2": "world", "duration": 0.5}]
@@ -83,7 +24,6 @@ async def add_transcription_data(segments, silences, pace, incorrect, ai_analysi
     ai_analysis = "Minor pronunciation error detected in 'Hello'"
     '''
     print("Adding Transcription Data")
-
     database_path = os.path.join(os.path.dirname(__file__), 'database.db')
     
     with connect(database_path) as conn:
@@ -123,7 +63,7 @@ async def add_transcription_data(segments, silences, pace, incorrect, ai_analysi
         return transcription_id  
 
 
-async def get_transcription_by_id(transcription_id):
+def get_transcription_by_id(transcription_id):
     print(f"Attemtping to grab data from ID: {transcription_id}")
     database_path = os.path.join(os.path.dirname(__file__), 'database.db')
     
@@ -175,7 +115,7 @@ async def get_transcription_by_id(transcription_id):
             "incorrect": incorrect
         }
 
-async def get_last_valid_id():
+def get_last_valid_id():
     database_path = os.path.join(os.path.dirname(__file__), 'database.db')
     
     with connect(database_path) as conn:
@@ -191,4 +131,3 @@ async def get_last_valid_id():
 
         # If we find a valid last ID, return it
         return last_valid_id
-
