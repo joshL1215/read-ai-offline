@@ -1,14 +1,30 @@
+import os
 from sqlite3 import connect
 
+def pingDatabase():
+    print("Hello from Database.py")
 
 def create_tables():
-    with connect() as conn:
+    '''
+    Performance Database. Each Row includes the following:
+    Unique ID
+    silence graph  
+    pace graph
+    incorrect words
+    AI Analysis
+    '''
+    print("Creating Database Tables")
+    
+    database_path = os.path.join(os.path.dirname(__file__), 'database.db') # Fix this later
+    
+    with connect(database_path) as conn:
         cursor = conn.cursor()
 
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS transcriptions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            ai_analysis TEXT
         )
         ''')
 
@@ -58,12 +74,24 @@ def create_tables():
         conn.commit()
 
 
-def add_transcription_data(segments, silences, pace, incorrect):
-    with connect() as conn:
+def add_transcription_data(segments, silences, pace, incorrect, ai_analysis):
+    '''
+    segments = [{"start": 0.0, "end": 1.2, "text": "Hello world"}]
+    silences = [{"phrase1": "Hello", "phrase2": "world", "duration": 0.5}]
+    pace = [{"time": 0.0, "wpm": 120}]
+    incorrect = [{"word": "Helo", "start": 0.0, "end": 0.5}]
+    ai_analysis = "Minor pronunciation error detected in 'Hello'"
+    '''
+    print("Adding Transcription Data")
+    database_path = os.path.join(os.path.dirname(__file__), 'database.db')
+    
+    with connect(database_path) as conn:
         cursor = conn.cursor()
 
-        # Insert a new transcription record and get its id
-        cursor.execute('INSERT INTO transcriptions DEFAULT VALUES')
+        cursor.execute(
+            'INSERT INTO transcriptions (ai_analysis) VALUES (?)',
+            (ai_analysis,)
+        )
         transcription_id = cursor.lastrowid
 
         for seg in segments:
@@ -75,7 +103,7 @@ def add_transcription_data(segments, silences, pace, incorrect):
         for s in silences:
             cursor.execute(
                 'INSERT INTO silences (transcription_id, phrase1, phrase2, duration) VALUES (?, ?, ?, ?)',
-                (transcription_id, s["phrase1"], s["phrase 2"], s["duration"])
+                (transcription_id, s["phrase1"], s["phrase2"], s["duration"])
             )
 
         for p in pace:
@@ -93,38 +121,41 @@ def add_transcription_data(segments, silences, pace, incorrect):
         conn.commit()
         return transcription_id  
 
+
 def get_transcription_by_id(transcription_id):
-    with connect() as conn:
+    print(f"Attemtping to grab data from ID: {transcription_id}")
+    database_path = os.path.join(os.path.dirname(__file__), 'database.db')
+    
+    with connect(database_path) as conn:
         cursor = conn.cursor()
 
-        # Check if transcription exists
-        cursor.execute('SELECT id, created_at FROM transcriptions WHERE id = ?', (transcription_id,))
+        cursor.execute(
+            'SELECT id, created_at, ai_analysis FROM transcriptions WHERE id = ?',
+            (transcription_id,)
+        )
         transcription = cursor.fetchone()
         if not transcription:
-            return None  # or raise exception if you prefer
+            print("There is no data at (ID: {transcription_id})")
+            return None
 
-        # Fetch related segments
         cursor.execute(
             'SELECT start, end, text FROM segments WHERE transcription_id = ? ORDER BY start',
             (transcription_id,)
         )
         segments = [{"start": row[0], "end": row[1], "text": row[2]} for row in cursor.fetchall()]
 
-        # Fetch related silences
         cursor.execute(
             'SELECT phrase1, phrase2, duration FROM silences WHERE transcription_id = ? ORDER BY id',
             (transcription_id,)
         )
         silences = [{"phrase1": row[0], "phrase2": row[1], "duration": row[2]} for row in cursor.fetchall()]
 
-        # Fetch related pace graph
         cursor.execute(
             'SELECT time, wpm FROM pace_graph WHERE transcription_id = ? ORDER BY time',
             (transcription_id,)
         )
         pace = [{"time": row[0], "wpm": row[1]} for row in cursor.fetchall()]
 
-        # Fetch related incorrect words
         cursor.execute(
             'SELECT word, start, end FROM incorrect_words WHERE transcription_id = ? ORDER BY start',
             (transcription_id,)
@@ -134,10 +165,29 @@ def get_transcription_by_id(transcription_id):
         return {
             "transcription": {
                 "id": transcription[0],
-                "created_at": transcription[1]
+                "created_at": transcription[1],
+                "ai_analysis": transcription[2]
             },
             "segments": segments,
             "silences": silences,
             "pace": pace,
             "incorrect": incorrect
         }
+
+def get_last_valid_id():
+    database_path = os.path.join(os.path.dirname(__file__), 'database.db')
+    
+    with connect(database_path) as conn:
+        cursor = conn.cursor()
+
+        cursor.execute('SELECT MAX(id) FROM transcriptions')
+        last_valid_id = cursor.fetchone()[0]
+
+        # If no valid ID is found (i.e., the table is empty), return None
+        if last_valid_id is None:
+            print("No valid transcription IDs found in the database.")
+            return None
+
+        # If we find a valid last ID, return it
+        return last_valid_id
+
