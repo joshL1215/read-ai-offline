@@ -48,14 +48,46 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-gemmaModel = 'gemma3:4b' # Must Download
-whisperModeSize = 'medium'
-whisperModel = whisper.load_model("base")
+gemmaModel = 'gemma3:4b'
+whisperModel = WhisperModel("base", device="cpu", compute_type="float32")
+
 DICTIONARY_AVAILABLE = False
 silence_threshold = 2
 
-# app = FastAPI()
+async def webm_to_text(file: UploadFile = File(...)):
+    '''
+    Input: Takes audio file
+    Output: Transcription fo the audio file 
+    '''
 
+    with tempfile.NamedTemporaryFile(suffix=".webm", delete=True) as webm_temp, \
+         tempfile.NamedTemporaryFile(suffix=".wav", delete=True) as wav_temp:
+
+        webm_bytes = await file.read()
+        webm_temp.write(webm_bytes)
+        webm_temp.flush()  # Ensure data is written to disk
+        print(f"Saved webm to temp file: {webm_temp.name}")
+
+        result = subprocess.run([
+            "ffmpeg", "-y",
+            "-i", webm_temp.name,
+            "-ar", "16000",
+            "-ac", "1",
+            "-f", "wav",
+            wav_temp.name
+        ], capture_output=True, text=True)
+
+        if result.returncode != 0:
+            print("FFmpeg error: ", result.stderr)
+
+        print("Conversion to wav successful.")
+
+        # transcription = await transcribe_async(wav_temp.name)
+        segments, info = model.transcribe(wav_temp.name, beam_size=5)
+        transcription = " ".join( [segment.text.strip() for segment in segments])
+        print("Transcription done:", transcription)
+
+        return {"transcription": transcription}
 def normalizeText(text: str) -> str:
     """Normalize text for comparison."""
     text = text.lower().strip()
