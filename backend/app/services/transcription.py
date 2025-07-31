@@ -20,7 +20,6 @@ import subprocess
 import matplotlib.pyplot as plt
 
 import ollama
-import whisper
 import matplotlib.pyplot as plt
 import re
 import os 
@@ -30,7 +29,7 @@ from difflib import Differ
 from fuzzywuzzy import fuzz
 from typing import List, Tuple
 
-from database import create_tables, pingDatabase, add_transcription_data, get_transcription_by_id, get_last_valid_id
+from db.database import create_tables, pingDatabase, add_transcription_data, get_transcription_by_id, get_last_valid_id
 
 
 app = FastAPI()
@@ -54,7 +53,7 @@ whisperModel = WhisperModel("base", device="cpu", compute_type="float32")
 DICTIONARY_AVAILABLE = False
 silence_threshold = 2
 
-async def webm_to_text(file: UploadFile = File(...)):
+async def webm_to_text(webm_bytes):
     '''
     Input: Takes audio file
     Output: Transcription fo the audio file 
@@ -63,7 +62,6 @@ async def webm_to_text(file: UploadFile = File(...)):
     with tempfile.NamedTemporaryFile(suffix=".webm", delete=True) as webm_temp, \
          tempfile.NamedTemporaryFile(suffix=".wav", delete=True) as wav_temp:
 
-        webm_bytes = await file.read()
         webm_temp.write(webm_bytes)
         webm_temp.flush()  # Ensure data is written to disk
         print(f"Saved webm to temp file: {webm_temp.name}")
@@ -83,19 +81,18 @@ async def webm_to_text(file: UploadFile = File(...)):
         print("Conversion to wav successful.")
 
         # transcription = await transcribe_async(wav_temp.name)
-        segments, info = model.transcribe(wav_temp.name, beam_size=5)
-        transcription = " ".join( [segment.text.strip() for segment in segments])
-        print("Transcription done:", transcription)
+        result = whisperModel.transcribe(wav_temp.name, beam_size=5)
 
-        return {"transcription": transcription}
-def normalizeText(text: str) -> str:
+        return result
+
+async def normalizeText(text: str) -> str:
     """Normalize text for comparison."""
     text = text.lower().strip()
     text = re.sub(r'\s+', ' ', text)  # Normalize spaces
     text = re.sub(r'[^\w\s]', '', text)  # Remove punctuation
     return text
 
-def load_homophones():
+async def load_homophones():
     """Return a dictionary of common homophones."""
     return {
         'to': ['too', 'two'],
@@ -105,15 +102,15 @@ def load_homophones():
     }
 
 
-def compare_texts(original: str, transcription: str, similarity_threshold: int = 80) -> List[Tuple[int, str, str, str]]:
+async def compare_texts(original: str, transcription: str, similarity_threshold: int = 80) -> List[Tuple[int, str, str, str]]:
     """
     Compare original text and transcription, returning errors as (position, original_word, transcribed_word, error_type).
     Error types: missing, extra, typo, homophone, substitution, gibberish.
     """
-    original_words = normalizeText(original).split()
-    transcription_words = normalizeText(transcription).split()
+    original_words = (await normalizeText(original)).split()
+    transcription_words = (await normalizeText(transcription)).split()
     errors = []
-    homophones = load_homophones()
+    homophones = await load_homophones()
     differ = Differ()
     differences = list(differ.compare(original_words, transcription_words))
     
@@ -153,7 +150,7 @@ def compare_texts(original: str, transcription: str, similarity_threshold: int =
 
 
 currentText = "" # Remove Later
-def generate(inp : str):
+async def generate(inp : str):
     '''
     Input: (Do not Call directly) Pushes input into Gemma
     Output: return Gemma Repsonse
@@ -178,23 +175,23 @@ def generate(inp : str):
     return tmp
 
 
-def generateStory(prompt : str):
+async def generateStory(prompt : str):
     '''
     Input: User Prompt from FastAPI
     Output: Returns the story that is generated
 
     (remove global variable currentText later)
     '''
-    currentText = generate(f"In one paragraph, write a story about: {prompt}")
+    currentText = await generate(f"In one paragraph, write a story about: {prompt}")
     return currentText
    
-def generateResponse(currentText, segments, silences, pace, incorrect):
+async def generateResponse(currentText, segments, silences, pace, incorrect):
     '''
     Input: Requires the inforamtion after grading (segment, silence, pace, incorrect)
     Output: Prints a response
     '''
     analysis = ""
-    transcription = " ".join([segment["text"] for segment in segments])
+    transcription = " ".join([segment.text for segment in segments])
 
     prompt = f"""
     You are a helpful speech assistant. Your job is to provide constructive feedback on the user's speech, suggest improvements, and encourage them to improve based on the following data:
@@ -212,18 +209,18 @@ def generateResponse(currentText, segments, silences, pace, incorrect):
 
     Give them positive reinforcement and make sure to provide clear suggestions for improving their next speech.
     """
-    currentText = generate(prompt)
+    currentText = await generate(prompt)
     return currentText
 
 
-def calculate_wpm(start_time, end_time, word_count):
+async def calculate_wpm(start_time, end_time, word_count):
     time_diff = end_time - start_time
     if time_diff <= 0:
         return 0
     minutes = time_diff / 60
     return word_count / minutes
     
-def analyzeRecording():
+async def analyze_recording(result):
     '''
     Input: Audio File (.wav)
     Output: Analysis JSON which includes:
@@ -231,34 +228,35 @@ def analyzeRecording():
     - Pace: WPM over time
     - Errors: Incorrect words with timestamps
     '''
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    audioFilePath = os.path.join(script_dir, "audio.wav")
-    result = whisperModel.transcribe(audioFilePath, word_timestamps=True)
-    segments = result["segments"]
 
-    transcription = " ".join(segment["text"].strip() for segment in result["segments"])
-    transcription = "Science is the sistematic pursuit of car the natural world through observation, experimantation, and analysiz. It really helps us understand how things work, from the tiniest atoms to sky, by asking questions and testing ideas. Science drives inovation, improves our daily lives, and challenges us to explore the unknown, constantly expanding what we know about there universe."
-    transcription_words = normalizeText(transcription).split()
+    segments, info = result
+
+    segments = list(segments)
+
+    print(segments)
+
+    transcription = " ".join(segment.text.strip() for segment in segments)
+    transcription_words = (await normalizeText(transcription)).split()
     
     currentText = "Science is the systematic pursuit of knowledge about the natural world through observation, experimentation, and analysis. It helps us understand how things work, from the tiniest atoms to vast galaxies, by asking questions and testing ideas. Science drives innovation, improves our daily lives, and challenges us to explore the unknown, constantly expanding what we know about the universe."
-    current_words = normalizeText(currentText).split()
+    current_words = (await normalizeText(currentText)).split()
 
     silences = []
     pace = []
     errors = []
 
-    total_duration = result["segments"][-1]["end"] if result["segments"] else 0.0
+    total_duration = segments[-1].end if segments else 0.0
 
     last_end_time = 0
-    for i, segment in enumerate(result["segments"]):
-        start_time = segment["start"]
-        end_time = segment["end"]
+    for i, segment in enumerate(segments):
+        start_time = segment.start
+        end_time = segment.end
         silence_threshold = 1.0
         if start_time - last_end_time > silence_threshold:
-            prev_phrase = result["segments"][i-1]["text"].strip() if i > 0 else ""
+            prev_phrase = segments[i-1].text.strip() if i > 0 else ""
             silences.append({
                 "phrase1": prev_phrase,
-                "phrase2": segment["text"].strip(),
+                "phrase2": segment.text.strip(),
                 "duration": start_time - last_end_time
             })
         last_end_time = end_time
@@ -267,10 +265,10 @@ def analyzeRecording():
     word_window = []
     word_timestamps = []
     
-    for segment in result["segments"]:
-        if "words" in segment:
-            for word_info in segment["words"]:
-                word = normalizeText(word_info["word"])
+    for segment in segments:
+        if segment.words is not None:
+            for word_info in segment.words:
+                word = await normalizeText(word_info["word"])
                 if word:  
                     word_timestamps.append((word, word_info["start"], word_info["end"]))
     
@@ -281,14 +279,14 @@ def analyzeRecording():
         if len(word_window) == window_size:
             window_start_time = word_window[0][1]
             window_end_time = word_window[-1][2]
-            wpm = calculate_wpm(window_start_time, window_end_time, window_size)
+            wpm = await calculate_wpm(window_start_time, window_end_time, window_size)
             pace.append({"time": window_end_time, "wpm": wpm})
 
     total_words = len(transcription_words)
     if total_duration > 0:
-        pace.append({"time": total_duration, "wpm": calculate_wpm(0, total_duration, total_words)})
+        pace.append({"time": total_duration, "wpm": await calculate_wpm(0, total_duration, total_words)})
 
-    text_errors = compare_texts(currentText, transcription)
+    text_errors = await compare_texts(currentText, transcription)
     trans_idx = 0  
     for pos, orig_word, trans_word, error_type in text_errors:
         if error_type == 'missing':
@@ -298,7 +296,7 @@ def analyzeRecording():
                 "end": word_timestamps[trans_idx-1][2] if trans_idx > 0 else 0.0
             })
         elif error_type == 'extra':
-            while trans_idx < len(word_timestamps) and normalizeText(word_timestamps[trans_idx][0]) != trans_word:
+            while trans_idx < len(word_timestamps) and (await normalizeText(word_timestamps[trans_idx][0])) != trans_word:
                 trans_idx += 1
             if trans_idx < len(word_timestamps):
                 errors.append({
@@ -308,7 +306,7 @@ def analyzeRecording():
                 })
                 trans_idx += 1
         else:
-            while trans_idx < len(word_timestamps) and normalizeText(word_timestamps[trans_idx][0]) != trans_word:
+            while trans_idx < len(word_timestamps) and (await normalizeText(word_timestamps[trans_idx][0])) != trans_word:
                 trans_idx += 1
             if trans_idx < len(word_timestamps):
                 errors.append({
@@ -318,13 +316,15 @@ def analyzeRecording():
                 })
                 trans_idx += 1
 
-    aiResponse = generateResponse(currentText, segments, silences, pace, errors)
+    aiResponse = await generateResponse(currentText, segments, silences, pace, errors)
     aiResponse = "testing database"
-    add_transcription_data(segments, silences, pace, errors, aiResponse)
+    # await add_transcription_data(segments, silences, pace, errors, aiResponse) TODO: removed for testing
 
+    print("its been done")
     return
+    return {"segments" : segments, "silences": silences, "pace": pace, "incorrect": errors, "aiResponse" : aiResponse}
 
-def plot_pace_graph(pace):
+async def plot_pace_graph(pace):
     '''
     Input: Pace Graph (as saved in the database)
     Output: Picture of a Pace over time (to frontend)
@@ -346,7 +346,7 @@ def plot_pace_graph(pace):
     # add API call
 
 
-def plot_silences(silences):
+async def plot_silences(silences):
     """
     Plot a horizontal bar chart to represent the duration of silences between phrase pairs.
     """
@@ -361,11 +361,6 @@ def plot_silences(silences):
     plt.tight_layout()
     plt.show()
     # Add API Call
-
-
-def readingProcess(prompt : str):
-    currentText = generateStory(prompt)
-    # Wait 
 
 
 '''
