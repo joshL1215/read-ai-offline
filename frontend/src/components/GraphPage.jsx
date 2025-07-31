@@ -1,5 +1,4 @@
 import React from "react";
-import JournalBook from "./JournalBook";
 
 
 function GraphPage() {
@@ -13,16 +12,5 @@ function GraphPage() {
         </div>
     );
 }
+export default GraphPage
 
-const pages = [
-    <GraphPage />,
-    <div>Right Page Content</div>,
-    <div>Another Left Page</div>,
-    <div>Another Right Page</div>,
-];
-
-function JournalView() {
-    return <JournalBook pages={pages} />;
-}
-
-export default JournalView;
