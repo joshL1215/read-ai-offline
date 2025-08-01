@@ -178,3 +178,47 @@ async def analyze_recording(result):
     return {"segments" : segments, "silences": silences, "pace": pace, "incorrect": errors, "aiResponse" : aiResponse}
 
 
+async def compare_texts(original: str, transcription: str, similarity_threshold: int = 80) -> List[Tuple[int, str, str, str]]:
+    """
+    Compare original text and transcription, returning errors as (position, original_word, transcribed_word, error_type).
+    Error types: missing, extra, typo, homophone, substitution, gibberish.
+    """
+    original_words = (await normalizeText(original)).split()
+    transcription_words = (await normalizeText(transcription)).split()
+    errors = []
+    homophones = await load_homophones()
+    differ = Differ()
+    differences = list(differ.compare(original_words, transcription_words))
+    
+    pos = 0
+    i = 0
+    while i < len(differences):
+        diff = differences[i]
+        if diff.startswith('  '):  # Matched word
+            pos += 1
+            i += 1
+        elif diff.startswith('- '):  # Word in original
+            orig_word = diff[2:]
+            if i + 1 < len(differences) and differences[i + 1].startswith('+ '):
+                trans_word = differences[i + 1][2:]
+                if fuzz.ratio(orig_word, trans_word) > similarity_threshold:
+                    errors.append((pos + 1, orig_word, trans_word, f'typo (did you mean "{orig_word}"?)'))
+                elif orig_word in homophones and trans_word in homophones[orig_word]:
+                    errors.append((pos + 1, orig_word, trans_word, 'homophone'))
+                elif DICTIONARY_AVAILABLE and not dictionary.check(trans_word):
+                    errors.append((pos + 1, orig_word, trans_word, 'gibberish'))
+                else:
+                    errors.append((pos + 1, orig_word, trans_word, 'substitution'))
+                i += 2
+                pos += 1
+            else:
+                errors.append((pos + 1, orig_word, '', 'missing'))
+                pos += 1
+                i += 1
+        elif diff.startswith('+ '):  # Extra word in transcription
+            trans_word = diff[2:]
+            errors.append((pos + 1, '', trans_word, 'extra'))
+            i += 1
+        else:  # Diff marker
+            i += 1
+    return errors

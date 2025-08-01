@@ -6,7 +6,6 @@ from typing import List, Tuple
 import ffmpeg
 from faster_whisper import WhisperModel
 from fuzzywuzzy import fuzz
-
 from db.database import create_tables, pingDatabase, add_transcription_data, get_transcription_by_id, get_last_valid_id
 
 
