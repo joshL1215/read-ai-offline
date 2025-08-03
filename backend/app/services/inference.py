@@ -1,7 +1,9 @@
 import ollama 
 import re
+import json
 from typing import List, Tuple
 from difflib import Differ
+from fastapi import WebSocket
 
 from db.database import pingDatabase, add_transcription_data, get_transcription_by_id, get_last_valid_id
 
@@ -9,24 +11,39 @@ silence_threshold = 2
 currentText = ""
 gemmaModel = 'gemma3n:e2b'
 
-async def generate(inp : str):
+async def generate(inp: str, websocket: WebSocket = None, inference_id = None):
     '''
     Input: (Do not Call directly) Pushes input into Gemma
-    Output: return Gemma Repsonse
+    Output: returns full Gemma response, streams tokens to websocket is available
     '''
     print("Starting Generation")
     tmp = ""
-    response = ollama.generate(
+    async_ollama = ollama.AsyncClient()
+    response = await async_ollama.generate(
         model="gemma3n:e2b",
         prompt=inp,
         stream=True
     )
 
-    for chunk in response:
+    async for chunk in response:
         if "response" in chunk:
-            print(chunk["response"], end="", flush=True)
-            tmp += chunk["response"]
-        
+            token = chunk["response"]
+            print(token, end="", flush=True)
+            tmp += token
+
+            if websocket and inference_id:
+                try:
+                    message = json.dumps({
+                        "inferenceID": inference_id,
+                        "text": token
+                    })
+                    print("trying")
+                    await websocket.send_text(message)
+                    print("Sent token")
+                except Exception as e:
+                    print(f"WebSocket send error: {e}")
+                    break
+
         if chunk.get('done', False):
             print("\nGeneration complete.")
             break 
@@ -34,27 +51,27 @@ async def generate(inp : str):
     return tmp
 
 
-async def generateStory(prompt : str):
+async def generateStory(prompt : str, websocket: WebSocket = None, inference_id = None):
     '''
     Input: User Prompt from FastAPI
     Output: Returns the story that is generated
 
     (remove global variable currentText later)
     '''
-    currentText = await generate(f"In one paragraph, write a story about: {prompt}")
+    currentText = await generate(f"In a maximum of 10 words words, write a poem about: {prompt}", websocket, inference_id)
     return currentText
    
-async def generateResponse(currentText, segments, silences, pace, incorrect):
+async def generateResponse(correct_text, segments, silences, pace, incorrect, websocket: WebSocket = None, inference_id = None):
     '''
     Input: Requires the inforamtion after grading (segment, silence, pace, incorrect)
     Output: Prints a response
     '''
     analysis = ""
     transcription = " ".join([segment.text for segment in segments])
-
     prompt = f"""
-    You are a helpful speech assistant. Your job is to provide constructive feedback on the user's speech, suggest improvements, and encourage them to improve based on the following data:
-    1. **Text they were responding to:** {currentText}
+
+    You are a helpful speech evaluator. Your job is to provide constructive feedback on the user's speech, suggest improvements:
+    1. **Text they were supposed to read:** {correct_text}
     2. **Transcription of what they read:** {transcription}
     3. **Moments when they paused for too long (and their duration):** {str(silences)}
     4. **A timeline of their voice pacing over time:** {str(pace)}
@@ -66,9 +83,9 @@ async def generateResponse(currentText, segments, silences, pace, incorrect):
     - Based on the pacing data, give advice on whether they are speaking too quickly or too slowly and how to improve.
     - Provide specific recommendations on how the user can improve their pronunciation, pacing, or fluency. Offer encouragement and actionable tips for better performance.
 
-    Give them positive reinforcement and make sure to provide clear suggestions for improving their next speech.
+    Do not respond conversationally. Do not ask follow up questions. Assume the user is unable to respond to what you say, they can only read it. Use very simple language to explain. 
     """
-    currentText = await generate(prompt)
+    currentText = await generate(prompt, websocket, inference_id)
     return currentText
 
 
@@ -95,7 +112,7 @@ async def load_homophones():
         'your': ['youre'],
     }
 
-async def analyze_recording(result):
+async def analyze_recording(correct_text, raw_transcription, websocket: WebSocket = None, inference_id = None):
     '''
     Input: Audio File (.wav)
     Output: Analysis JSON which includes:
@@ -104,13 +121,13 @@ async def analyze_recording(result):
     - Errors: Incorrect words with timestamps
     '''
 
-    segments, info = result
+    segments, info = raw_transcription
 
     segments = list(segments)
 
     transcription = " ".join(segment.text.strip() for segment in segments)
     transcription_words = (await normalizeText(transcription)).split()
-    current_words = (await normalizeText(currentText)).split()
+    current_words = (await normalizeText(correct_text)).split()
 
     silences = []
     pace = []
@@ -187,7 +204,7 @@ async def analyze_recording(result):
                 })
                 trans_idx += 1
 
-    aiResponse = await generateResponse(currentText, segments, silences, pace, errors)
+    aiResponse = await generateResponse(correct_text, segments, silences, pace, errors)
     aiResponse = "testing database"
     # await add_transcription_data(segments, silences, pace, errors, aiResponse) TODO: removed for testing
 
