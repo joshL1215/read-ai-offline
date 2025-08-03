@@ -1,7 +1,6 @@
 import React from 'react';
 import MicVisualizer from '../components/MicVisualizer.jsx'
 import { useEffect, useState } from "react";
-import InferenceBox from '../components/InferenceBox.jsx';
 
 function ReadingScene() {
 
@@ -16,8 +15,9 @@ function ReadingScene() {
 
     return (
         <div style={{ padding: 20 }}>
+            <p>Message from backend: <strong>{message}</strong></p>
+
             <MicVisualizer />
-            <InferenceBox inferenceID="placeholder" title="Hello" style={{ maxWidth: 600, mx: "auto", mt: 4, p: 2, boxShadow: 3 }} />
         </div>
 
     );
