@@ -3,7 +3,7 @@ import re
 from typing import List, Tuple
 from difflib import Differ
 
-from db.database import create_tables, pingDatabase, add_transcription_data, get_transcription_by_id, get_last_valid_id
+from db.database import pingDatabase, add_transcription_data, get_transcription_by_id, get_last_valid_id
 
 silence_threshold = 2
 currentText = ""
@@ -108,12 +108,8 @@ async def analyze_recording(result):
 
     segments = list(segments)
 
-    print(segments)
-
     transcription = " ".join(segment.text.strip() for segment in segments)
     transcription_words = (await normalizeText(transcription)).split()
-    
-    currentText = "Science is the systematic pursuit of knowledge about the natural world through observation, experimentation, and analysis. It helps us understand how things work, from the tiniest atoms to vast galaxies, by asking questions and testing ideas. Science drives innovation, improves our daily lives, and challenges us to explore the unknown, constantly expanding what we know about the universe."
     current_words = (await normalizeText(currentText)).split()
 
     silences = []

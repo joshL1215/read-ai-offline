@@ -44,23 +44,6 @@ async def webm_to_text(webm_bytes):
 
         return result
 
-async def normalizeText(text: str) -> str:
-    """Normalize text for comparison."""
-    text = text.lower().strip()
-    text = re.sub(r'\s+', ' ', text)  # Normalize spaces
-    text = re.sub(r'[^\w\s]', '', text)  # Remove punctuation
-    return text
-
-async def load_homophones():
-    """Return a dictionary of common homophones."""
-    return {
-        'to': ['too', 'two'],
-        'their': ['there', 'theyre'],
-        'write': ['right', 'rite'],
-        'your': ['youre'],
-    }
-
-
 
 '''
 Order of Operations:
