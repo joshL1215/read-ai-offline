@@ -174,4 +174,4 @@ cython_debug/
 .pypirc
 
 #SQLite DB
-database.db
+**/database.db
