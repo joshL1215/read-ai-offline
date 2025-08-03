@@ -1,7 +1,8 @@
-from fastapi import FastAPI, File, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, File, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from services.transcription import webm_to_text, analyze_recording
+from fastapi.responses import JSONResponse, StreamingResponse
+from services.transcription import webm_to_text
+from services.inference import analyze_recording
 
 app = FastAPI()
 
@@ -25,4 +26,5 @@ async def eval(file: UploadFile = File(...)):
     result = await analyze_recording(model_output)
 
     return result
+
 

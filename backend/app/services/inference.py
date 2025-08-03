@@ -1,4 +1,8 @@
 import ollama 
+import re
+from typing import List, Tuple
+from difflib import Differ
+
 from db.database import create_tables, pingDatabase, add_transcription_data, get_transcription_by_id, get_last_valid_id
 
 silence_threshold = 2
@@ -74,7 +78,23 @@ async def calculate_wpm(start_time, end_time, word_count):
         return 0
     minutes = time_diff / 60
     return word_count / minutes
-    
+
+async def normalizeText(text: str) -> str:
+    """Normalize text for comparison."""
+    text = text.lower().strip()
+    text = re.sub(r'\s+', ' ', text)  # Normalize spaces
+    text = re.sub(r'[^\w\s]', '', text)  # Remove punctuation
+    return text
+
+async def load_homophones():
+    """Return a dictionary of common homophones."""
+    return {
+        'to': ['too', 'two'],
+        'their': ['there', 'theyre'],
+        'write': ['right', 'rite'],
+        'your': ['youre'],
+    }
+
 async def analyze_recording(result):
     '''
     Input: Audio File (.wav)

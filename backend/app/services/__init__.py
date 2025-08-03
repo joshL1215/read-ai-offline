@@ -1,1 +1,2 @@
-from .transcription import webm_to_text, analyze_recording
+from .transcription import webm_to_text
+from .inference import analyze_recording
