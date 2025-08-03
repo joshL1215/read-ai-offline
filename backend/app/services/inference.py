@@ -3,7 +3,7 @@ import re
 from typing import List, Tuple
 from difflib import Differ
 
-from db.database import create_tables, pingDatabase, add_transcription_data, get_transcription_by_id, get_last_valid_id
+from db.database import pingDatabase, add_transcription_data, get_transcription_by_id, get_last_valid_id
 
 silence_threshold = 2
 currentText = ""
