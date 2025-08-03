@@ -1,7 +1,10 @@
-from fastapi import FastAPI, File, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, File, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from services.transcription import webm_to_text, analyze_recording
+from fastapi.responses import JSONResponse, StreamingResponse
+from services.transcription import webm_to_text
+from services.inference import analyze_recording
+from db.database import create_tables
+import os
 
 app = FastAPI()
 
@@ -26,3 +29,11 @@ async def eval(file: UploadFile = File(...)):
 
     return result
 
+# Check if Database is Created
+main_dir = os.path.dirname(os.path.abspath(__file__))
+relative_path = os.path.join(main_dir, 'db', 'database.db')
+if os.path.exists(relative_path):
+    print("The database file exists.")
+else:
+    print("The database file does not exist.")
+    create_tables()
