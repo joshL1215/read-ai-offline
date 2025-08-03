@@ -11,7 +11,9 @@ function SceneHeader({ scene }) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '20px',
+                paddingTop: '25px',
+                paddingLeft: '30px',
+                paddingRight: '30px',
             }}
         >
             <Typography

@@ -1,27 +1,49 @@
 import React from 'react';
-import MicVisualizer from '../components/MicVisualizer.jsx'
-import { useEffect, useState } from "react";
+import MicVisualizer from '../components/MicVisualizer.jsx';
+import { Box } from '@mui/material';
 import InferenceBox from '../components/InferenceBox.jsx';
+import SceneHeader from '../components/SceneHeader.jsx';
 
 function ReadingScene() {
-
-    const [message, setMessage] = useState("");
-
-    useEffect(() => {
-        fetch("http://localhost:8000/ping")
-            .then(res => res.json())
-            .then(data => setMessage(data.message))
-            .catch(err => console.error("API Error:", err));
-    }, []);
-
     return (
-        <div style={{ padding: 20 }}>
-            <MicVisualizer />
-            <InferenceBox inferenceID="placeholder" title="Hello" style={{ maxWidth: 600, mx: "auto", mt: 4, p: 2, boxShadow: 3 }} />
-        </div>
 
+        <Box
+            sx={{
+                position: 'relative',
+                width: '100vw',
+                height: '100vh',
+                backgroundColor: '#fafafa',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+            }}
+        >
+
+            <SceneHeader scene="Read" />
+            <Box
+                sx={{
+                    flex: 1,
+                    width: '100%',
+                    overflow: 'hidden',
+                }}
+            >
+                <InferenceBox inferenceID="full" title="Unmute and read!" style={{ width: '100%', height: '100%' }} />
+            </Box>
+
+            <Box
+                sx={{
+                    height: 160,
+                    width: '100%',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    paddingBottom: 5,
+                }}
+            >
+                <MicVisualizer />
+            </Box>
+        </Box>
     );
 }
-
 
 export default ReadingScene;

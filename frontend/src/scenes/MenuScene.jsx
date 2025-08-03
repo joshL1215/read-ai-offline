@@ -1,28 +1,8 @@
 import { useState, useRef } from 'react'
 import NavBar from '../components/NavBar';
 import { Box, Container } from '@mui/material';
-import SettingsIcon from '@mui/icons-material/Settings';
 import Typography from '@mui/material/Typography';
 
-
-
-function SettingsIconComponent() {
-    return (
-
-        <SettingsIcon sx={{
-            fontSize: '450px',
-            color: 'rgba(255, 255, 255, 1)',
-            animation: 'spin 20s linear infinite',
-            '@keyframes spin': {
-                '0%': { transform: 'rotate(0deg)' },
-                '100%': { transform: 'rotate(360deg)' },
-            }
-        }
-        } />
-
-
-    );
-}
 
 function MenuScene() {
 
@@ -52,7 +32,7 @@ function MenuScene() {
                         flexDirection: 'column',
                         justifyContent: 'center',
                         width: '50vw',
-                        gap: 1, // adds spacing between lines
+                        gap: 1,
                     }}
                 >
                     <Typography variant="h5" sx={{ fontSize: '40px' }}>

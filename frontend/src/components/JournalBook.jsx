@@ -21,7 +21,7 @@ const styles = {
         display: 'flex',
         flexDirection: 'row',
         flex: 1,
-        minHeight: '500px',
+        minHeight: '425px',
     },
     page: {
         flex: 1,
@@ -42,6 +42,7 @@ const styles = {
         alignItems: 'center',
         outline: 'none',
         boxShadow: 'none',
+        paddingBottom: '1rem'
 
     },
 };
@@ -53,7 +54,7 @@ function JournalBook({ pages }) {
     const totalPagesets = Math.ceil(pageCount / 2);
 
     const leftPage = pages[currentPageset * 2];
-    const rightPage = pages[currentPageset * 2 + 1] || <div />; // blank if missing
+    const rightPage = pages[currentPageset * 2 + 1] || <div />;
 
     const nextPageset = () => {
         if (currentPageset < totalPagesets - 1) {
