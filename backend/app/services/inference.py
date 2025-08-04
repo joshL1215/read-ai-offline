@@ -58,7 +58,7 @@ async def generateStory(prompt : str, websocket: WebSocket = None, inference_id 
 
     (remove global variable currentText later)
     '''
-    currentText = await generate(f"In a maximum of 10 words words, write a poem about: {prompt}", websocket, inference_id)
+    currentText = await generate(f"In a maximum of 50 words, write a story about: {prompt}", websocket, inference_id)
     return currentText
    
 async def generateResponse(correct_text, segments, silences, pace, incorrect, websocket: WebSocket = None, inference_id = None):
@@ -70,7 +70,7 @@ async def generateResponse(correct_text, segments, silences, pace, incorrect, we
     transcription = " ".join([segment.text for segment in segments])
     prompt = f"""
 
-    You are a helpful speech evaluator. Your job is to provide constructive feedback on the user's speech, suggest improvements:
+    You are a speech evaluator. Your job is to provide constructive feedback on the user's speech, suggest improvements:
     1. **Text they were supposed to read:** {correct_text}
     2. **Transcription of what they read:** {transcription}
     3. **Moments when they paused for too long (and their duration):** {str(silences)}
@@ -81,9 +81,10 @@ async def generateResponse(correct_text, segments, silences, pace, incorrect, we
     - Review the transcription and compare it to the original text. Point out any differences, especially any missed or mispronounced words.
     - Look at the silences. If the user paused for too long, suggest how they could pace their speech better.
     - Based on the pacing data, give advice on whether they are speaking too quickly or too slowly and how to improve.
-    - Provide specific recommendations on how the user can improve their pronunciation, pacing, or fluency. Offer encouragement and actionable tips for better performance.
+    - Provide specific recommendations on how the user can improve their pronunciation, pacing, or fluency. Offer actionable tips for better performance.
+    - Keep your response to around 200 words. Use very simple and brief language.
 
-    Do not respond conversationally. Do not ask follow up questions. Assume the user is unable to respond to what you say, they can only read it. Use very simple language to explain. 
+    Do not respond conversationally. Do not ask follow up questions. Assume the user is unable to respond to what you say, they can only read it. 
     """
     currentText = await generate(prompt, websocket, inference_id)
     return currentText
@@ -126,6 +127,8 @@ async def analyze_recording(correct_text, raw_transcription, websocket: WebSocke
     segments = list(segments)
 
     transcription = " ".join(segment.text.strip() for segment in segments)
+
+    print(transcription)
     transcription_words = (await normalizeText(transcription)).split()
     current_words = (await normalizeText(correct_text)).split()
 
@@ -205,7 +208,6 @@ async def analyze_recording(correct_text, raw_transcription, websocket: WebSocke
                 trans_idx += 1
 
     aiResponse = await generateResponse(correct_text, segments, silences, pace, errors)
-    aiResponse = "testing database"
     # await add_transcription_data(segments, silences, pace, errors, aiResponse) TODO: removed for testing
 
     return {"segments" : segments, "silences": silences, "pace": pace, "incorrect": errors, "aiResponse" : aiResponse}
