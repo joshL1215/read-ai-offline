@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import MicIcon from '@mui/icons-material/Mic';
+import MicOffIcon from '@mui/icons-material/MicOff';
 import { Avatar, Box } from "@mui/material";
 
 function MicVisualizer() {
@@ -104,20 +105,23 @@ function MicVisualizer() {
                 flexDirection: "column",
                 justifyContent: "center",
                 alignItems: "center",
-                mt: 4,
             }}
         >
             <Avatar
                 onClick={handleMicClick}
                 sx={{
                     bgcolor: voiceDetected ? "#79cda2d4" : "grey.500",
-                    width: 80,
-                    height: 80,
+                    width: 100,
+                    height: 100,
                     cursor: "pointer",
                     transition: "all 0.25s ease",
                 }}
             >
-                <MicIcon sx={{ fontSize: voiceDetected ? 45 : 40 }} />
+                {recording ? (
+                    <MicIcon sx={{ fontSize: voiceDetected ? 50 : 45 }} />
+                ) : (
+                    <MicOffIcon sx={{ fontSize: 45 }} />
+                )}
             </Avatar>
         </Box>
     );

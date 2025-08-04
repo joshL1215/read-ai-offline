@@ -1,45 +1,51 @@
-import React, { useEffect, useState } from "react";
-import Button from '@mui/material/Button';
-import { Typography } from "@mui/material";
-import { Box, justifyContent, shadows } from '@mui/system';
-import { Link as RouteLink } from 'react-router-dom';
-
-
-const buttonStyles = {
-    justifyContent: 'center',
-    transition: 'transform 0.75s ease, color 0.75s ease',
-    fontSize: 50,
-    fontFamily: 'Inter',
-    color: '#000000ff',
-    textTransform: 'none',
-    letterSpacing: '0.1px',
-    backgroundColor: 'transparent',
-    willChange: 'transform',
-    '&:hover': {
-        color: '#321a79ff',
-        transform: 'scale(1.2)',
-    },
-};
+import React from "react";
+import { Link } from "react-router-dom";
+import IconButton from '@mui/material/IconButton';
+import HomeIcon from '@mui/icons-material/Home';
+import { Typography, Box } from "@mui/material";
 
 function SceneHeader({ scene }) {
     return (
-        <Box>
-
-            <Typography variant="h2" sx={{
-                fontSize: '40px ',
-                padding: '10px',
-                fontWeight: 'bold',
-                background: 'linear-gradient(45deg, #2a28a7ff, #31051eff)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent'
-            }}>
-
+        <Box
+            sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingTop: '25px',
+                paddingLeft: '30px',
+                paddingRight: '30px',
+            }}
+        >
+            <Typography
+                variant="h2"
+                sx={{
+                    fontSize: '40px',
+                    fontWeight: 'bold',
+                    background: 'linear-gradient(45deg, #2a28a7ff, #31051eff)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                }}
+            >
                 {scene}
-
             </Typography>
-        </Box>
 
-    )
+            <IconButton
+                component={Link}
+                to="/"
+                sx={{
+                    color: '#000000ff',
+                    transition: 'color 0.3s ease, transform 0.3s ease',
+                    '&:hover': {
+                        color: '#321a79ff',
+                        transform: 'scale(1.2)',
+                    },
+                }}
+                aria-label="home"
+            >
+                <HomeIcon fontSize="large" />
+            </IconButton>
+        </Box>
+    );
 }
 
 export default SceneHeader;

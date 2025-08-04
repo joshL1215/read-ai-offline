@@ -5,7 +5,7 @@ function InferenceBox({ title, inferenceID, style }) {
   const [text, setText] = useState("");
 
   useEffect(() => {
-    const ws = new WebSocket("ws://localhost:8000/ws");
+    const ws = new WebSocket(`ws://localhost:8000/ws/inf-stream/${inferenceID}`);
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
@@ -26,7 +26,7 @@ function InferenceBox({ title, inferenceID, style }) {
       <Typography variant="h6">{title}</Typography>
       <Box mt={2} p={2} bgcolor="#f5f5f5" borderRadius={2} minHeight={100}>
         <Typography variant="body1" whiteSpace="pre-wrap">
-          {text || "Waiting for messages..."}
+          {text || "Your story..."}
         </Typography>
       </Box>
     </Box>
