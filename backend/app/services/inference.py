@@ -84,7 +84,8 @@ async def generateResponse(correct_text, segments, silences, pace, incorrect, we
     - Provide specific recommendations on how the user can improve their pronunciation, pacing, or fluency. Offer actionable tips for better performance.
     - Keep your response to around 200 words. Use very simple and brief language.
 
-    Do not respond conversationally. Do not ask follow up questions. Assume the user is unable to respond to what you say, they can only read it. 
+    Do not respond conversationally. Do not ask follow up questions. Assume the user is unable to respond to what you say, they can only read it.
+    Finally, based on your evaluation, provide a grade where grade can be one of the following: F, D, C, B-, B, B+, A-, A, A+
     """
     currentText = await generate(prompt, websocket, inference_id)
     return currentText
@@ -120,6 +121,7 @@ async def analyze_recording(correct_text, raw_transcription, websocket: WebSocke
     - Silences: List of silence periods with phrases and duration
     - Pace: WPM over time
     - Errors: Incorrect words with timestamps
+    - Overall letter grade
     '''
 
     segments, info = raw_transcription
@@ -208,9 +210,10 @@ async def analyze_recording(correct_text, raw_transcription, websocket: WebSocke
                 trans_idx += 1
 
     aiResponse = await generateResponse(correct_text, segments, silences, pace, errors)
+    grade = aiResponse.split("**Grade:**")[-1]
     # await add_transcription_data(segments, silences, pace, errors, aiResponse) TODO: removed for testing
 
-    return {"segments" : segments, "silences": silences, "pace": pace, "incorrect": errors, "aiResponse" : aiResponse}
+    return {"segments" : segments, "silences": silences, "pace": pace, "incorrect": errors, "aiResponse" : aiResponse, "grade" : grade}
 
 
 async def compare_texts(original: str, transcription: str, similarity_threshold: int = 80) -> List[Tuple[int, str, str, str]]:

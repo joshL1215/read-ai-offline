@@ -3,7 +3,7 @@ import MicIcon from '@mui/icons-material/Mic';
 import MicOffIcon from '@mui/icons-material/MicOff';
 import { Avatar, Box } from "@mui/material";
 
-function MicVisualizer() {
+function MicVisualizer({ onEvalComplete }) {
     const [voiceDetected, setVoiceDetected] = useState(false);
     const [recording, setRecording] = useState(false);
 
@@ -59,11 +59,17 @@ function MicVisualizer() {
             const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
             const formData = new FormData();
             formData.append("file", audioBlob, "recording.webm");
+            formData.append("inference_id", "eval");
             try {
-                await fetch('http://localhost:8000/eval', {
+                const response = await fetch('http://localhost:8000/eval', {
                     method: 'POST',
                     body: formData
                 });
+                const result = await response.json();
+
+                if (onEvalComplete) {
+                    onEvalComplete(result);
+                }
             } catch (error) {
                 console.error('Error sending audio:', error);
             }

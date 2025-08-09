@@ -24,7 +24,7 @@ function InferenceBox({ title, inferenceID, style }) {
   return (
     <Box sx={{ style }}>
       <Typography variant="h6">{title}</Typography>
-      <Box mt={2} p={2} bgcolor="#f5f5f5" borderRadius={2} minHeight={100}>
+      <Box mt={2} p={2} bgcolor="#d1d1d1ff" borderRadius={2} minHeight={500}>
         <Typography variant="body1" whiteSpace="pre-wrap">
           {text || "Your story..."}
         </Typography>

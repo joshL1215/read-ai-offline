@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, WebSocket, WebSocketDisconnect, BackgroundTasks, Query, UploadFile
+from fastapi import FastAPI, File, WebSocket, WebSocketDisconnect, BackgroundTasks, Query, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -40,7 +40,8 @@ stories = {}
 
 # Endpoints
 @app.post("/eval")
-async def eval(file: UploadFile = File(...), inference_id : str = None):
+async def eval(file: UploadFile = File(...), inference_id: str = Form(None)):
+    print(inference_id)
     websocket = connected_clients.get(inference_id)
     webm_bytes = await file.read()
     model_output = await webm_to_text(webm_bytes)
