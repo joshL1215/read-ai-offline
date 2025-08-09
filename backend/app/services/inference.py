@@ -209,7 +209,7 @@ async def analyze_recording(correct_text, raw_transcription, websocket: WebSocke
                 })
                 trans_idx += 1
 
-    aiResponse = await generateResponse(correct_text, segments, silences, pace, errors)
+    aiResponse = await generateResponse(correct_text, segments, silences, pace, errors, websocket, inference_id)
     grade = aiResponse.split("**Grade:**")[-1]
     # await add_transcription_data(segments, silences, pace, errors, aiResponse) TODO: removed for testing
 
