@@ -56,7 +56,7 @@ function ReadingScene() {
                 <Box
                     sx={{
                         flex: 1,
-                        paddingX: 2,
+                        padding: 3,
                         paddingBottom: 2,
                         overflow: 'hidden',
                     }}
@@ -79,6 +79,12 @@ function ReadingScene() {
                     }}
                 >
                     <MicVisualizer />
+                    <InferenceBox
+                        inferenceID="eval"
+                        title="Eval"
+                        style={{ width: '100%', height: '100%' }}
+                    />
+
                 </Box>
             </Box>
 
